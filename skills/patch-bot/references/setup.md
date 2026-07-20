@@ -43,12 +43,14 @@ these secrets in its environment (NOT in the repo, NOT in config):
 Remind the user: a cron run is headless — interactive OAuth/MCP logins won't be present,
 so these must be real environment secrets.
 
-## 5. First pass = dry run
+## 5. First pass
 
-Set `policy.gate` to `label` and tell the user to let one or two passes run so issues get
-filed **without** auto-triggering fixes. They eyeball issue quality (is the fingerprint
-right? is the stacktrace useful? is the repro instruction sound?). Only after they're
-happy should they consider `auto`, and even then most teams keep `label` forever.
+The default gate is `auto` — patch-bot files the issue and fixes it on its own. That's what
+most users want. But for the very first run, it's worth suggesting they temporarily set
+`policy.gate` to `label` so a pass or two files issues **without** triggering fixes. That
+lets them eyeball quality (is the fingerprint right? is the stacktrace useful? is the repro
+instruction sound?) before handing over the keys. Once they're happy, set it back to `auto`
+(or leave it on `label` if they'd rather approve each fix).
 
 ## 6. Summary
 

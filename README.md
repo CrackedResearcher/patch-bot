@@ -13,8 +13,8 @@ There's no server to run — it's a Claude Code skill that runs on a schedule.
 - **Automatic fixes.** Every bug becomes a test, a fix, and a PR — hands-off.
 - **No infrastructure.** No backend to deploy. It polls your error tracker on a schedule.
 - **No duplicate issues.** Each error is fingerprinted, so the same bug is never filed twice.
-- **You stay in control.** It files the issue and waits for your go-ahead before fixing
-  (or set it to fully automatic).
+- **Automatic by default.** It opens the issue and Claude fixes it — no babysitting. Want
+  to approve each fix first? Turn on label mode and it waits for your go-ahead.
 - **Fixes come with tests.** Claude has to reproduce the bug with a failing test before it
   changes any code — so you get a regression test, not a guess.
 
@@ -77,12 +77,14 @@ That's it. Let it run a pass or two and read the issues it files before you go l
 Once it's running, your day looks like this:
 
 1. A bug hits production.
-2. Within ~15 minutes, patch-bot opens an issue with the stacktrace.
-3. You add the `patch-bot:fix` label to the ones worth fixing.
-4. Claude opens a PR that closes the issue.
-5. You review and merge.
+2. Within ~15 minutes, patch-bot opens an issue and Claude opens a PR that fixes it.
+3. You review and merge.
 
-You decide what gets fixed and what gets merged. patch-bot handles the rest.
+That's the default — it just handles bugs on its own.
+
+**Want to approve fixes yourself?** Turn on label mode (`"gate": "label"`). Then patch-bot
+opens the issue and stops there. Claude only fixes it once you add the `patch-bot:fix` label
+to the ones you care about. Everything else works the same.
 
 ## Configuration
 
@@ -95,7 +97,7 @@ Everything lives in `patch-bot.config.json`:
   "policy": {
     "min_occurrences": 5,        // ignore errors seen fewer than this many times
     "max_per_run": 5,            // most issues to open in a single pass
-    "gate": "label",             // "label" = you approve fixes, "auto" = fully automatic
+    "gate": "auto",              // "auto" = fix automatically (default), "label" = you approve each fix
     "levels": ["error", "fatal"],
     "deny": ["TimeoutError", "ConnectionError", "healthcheck"],
     "cooldown_hours": 24         // don't refile a bug you just closed
@@ -103,7 +105,9 @@ Everything lives in `patch-bot.config.json`:
 }
 ```
 
-Start with `"gate": "label"`. Switch to `"auto"` once you trust it.
+The default is `"auto"` — patch-bot fixes bugs on its own. Prefer to approve each one? Set
+it to `"label"`. Either way, the thresholds, `deny` list, and `max_per_run` cap are what
+keep it from spamming, so tune those to taste.
 
 ## Adding other error trackers
 

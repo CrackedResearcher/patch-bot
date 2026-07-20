@@ -9,7 +9,7 @@ PR-spam machine. Every field is a guardrail.
 "policy": {
   "min_occurrences": 5,        // ignore errors seen fewer than N times
   "max_per_run": 5,            // hard cap on issues opened per triage pass
-  "gate": "label",             // "label" (human presses go) | "auto" (autonomous)
+  "gate": "auto",              // "auto" (autonomous, default) | "label" (human presses go)
   "levels": ["error", "fatal"],// only these Sentry levels qualify
   "allow": [],                 // if non-empty, culprit/title MUST match one of these (substring or /regex/)
   "deny": [                    // drop if culprit/title matches any of these
@@ -56,8 +56,9 @@ gh issue list --repo <repo> --state all --search "patch-bot-fingerprint: <finger
 
 ## Gate
 
-- `"label"` (default): open the issue only. A human adds `patch-bot:fix` to trigger the
-  fix. This is the recommended mode — it keeps a human in the loop on *what* gets fixed
-  while patch-bot still does all the tedious detection + write-up.
-- `"auto"`: patch-bot also posts `@claude` immediately. Full autonomous. Only enable once
-  issue quality is proven and `deny`/thresholds are tuned.
+- `"auto"` (default): patch-bot opens the issue and immediately tags `@claude`, so the fix
+  happens on its own with nobody in the loop. The thresholds, `deny` list, dedupe, and
+  `max_per_run` cap are what keep this from spamming — tune those, not the gate.
+- `"label"`: patch-bot opens the issue only, then stops. A human adds `patch-bot:fix` when
+  they want the fix attempted. Use this when you want to approve *what* gets fixed while
+  patch-bot still does all the tedious detection + write-up.

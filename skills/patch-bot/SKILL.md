@@ -90,10 +90,10 @@ Read `patch-bot.config.json` first — it drives every decision below.
    instructions (the part that makes fixes good, not just fast).
 
 6. **Gate the agent** per `policy.gate`:
-   - `"auto"` → also post a comment `@claude` (or apply `patch-bot:fix`) to fire Flow 2 now.
-   - `"label"` (default, recommended) → open the issue only. A human adds
-     `patch-bot:fix` when they want the fix attempted. Safer; prevents PR spam and
-     the agent "fixing" flaky/infra/third-party errors.
+   - `"auto"` (default) → also post a comment `@claude` (or apply `patch-bot:fix`) to fire
+     Flow 2 now, so the fix happens without waiting on anyone.
+   - `"label"` → open the issue only, then stop. A human adds `patch-bot:fix` when they
+     want the fix attempted. Use when you want to approve *what* gets fixed.
 
 7. **Record** the pass: log a one-line summary — errors seen, filtered (with reasons),
    issues opened, agents triggered. This summary is what the scheduled-run log shows.
@@ -104,8 +104,9 @@ Read `patch-bot.config.json` first — it drives every decision below.
 
 - **Cap per run** (`max_per_run`) so one bad deploy can't spawn 50 issues/PRs.
 - **Dedupe before create**, always — an un-deduped poll loop refiles the same bug forever.
-- **Prefer `gate: "label"`** as the default. Autonomous PR creation on every error is
-  a footgun; make full-auto an explicit opt-in.
+- **Auto is the default**, so the other guardrails do the real work of preventing spam —
+  thresholds, `deny`, dedupe, and `max_per_run`. Keep those tuned. `gate: "label"` is the
+  opt-in for when a human should approve *what* gets fixed.
 - **Headless auth**: the scheduled agent runs with nobody present, so it needs
   `SENTRY_AUTH_TOKEN` and `GH_TOKEN` as agent secrets — interactive/OAuth MCP logins
   won't be available in a cron run.

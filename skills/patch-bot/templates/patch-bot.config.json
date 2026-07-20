@@ -13,7 +13,7 @@
   "policy": {
     "min_occurrences": 5,
     "max_per_run": 5,
-    "gate": "label",
+    "gate": "auto",
     "levels": ["error", "fatal"],
     "allow": [],
     "deny": ["TimeoutError", "ConnectionError", "third_party/", "healthcheck"],
