@@ -1,0 +1,51 @@
+# Flow 2: the fix action. patch-bot scaffolds this into <target-repo>/.github/workflows/claude.yml
+# Fires when an issue is labeled `patch-bot:fix` or a comment mentions @claude.
+# Requires repo secret: ANTHROPIC_API_KEY
+name: patch-bot fix
+
+on:
+  issues:
+    types: [labeled]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  fix:
+    # Only run for patch-bot's fix signal: the label, or an @claude mention.
+    if: >-
+      (github.event_name == 'issues' && github.event.label.name == 'patch-bot:fix') ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Claude Code
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # The issue body (written by patch-bot) carries the repro-first instructions.
+          # This is the operating brief for the fix.
+          prompt: |
+            You are patch-bot's fixer, working from a production error report filed as this
+            GitHub issue. Work in this order and do not skip step 1:
+
+            1. REPRODUCE FIRST. Write a NEW automated test that fails because of this bug,
+               reproducing the error in the issue's stacktrace. Do not touch app code yet.
+               Confirm the test fails for the stated reason.
+            2. FIX. Make the smallest change that makes the failing test pass. Do not
+               refactor unrelated code. Match the surrounding style.
+            3. VERIFY. Run the test suite. The new test must pass and nothing else may break.
+            4. OPEN A PR from a branch named `fix/patch-bot-<issue-number>`. In the PR body:
+               link the issue (Closes #<n>), summarize root cause in 2-3 sentences, and note
+               the reproducing test you added. Keep the diff minimal and reviewable.
+
+            If you cannot confidently reproduce the bug (e.g. it looks like a flaky/infra/
+            third-party error), DO NOT guess a fix. Comment on the issue explaining why and
+            what you'd need, then stop.

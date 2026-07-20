@@ -1,0 +1,22 @@
+{
+  "$schema": "./patch-bot.schema.json",
+  "repo": "OWNER/NAME",
+  "source": {
+    "provider": "sentry",
+    "org": "your-sentry-org",
+    "project": "your-sentry-project",
+    "token_env": "SENTRY_AUTH_TOKEN"
+  },
+  "github": {
+    "token_env": "GH_TOKEN"
+  },
+  "policy": {
+    "min_occurrences": 5,
+    "max_per_run": 5,
+    "gate": "label",
+    "levels": ["error", "fatal"],
+    "allow": [],
+    "deny": ["TimeoutError", "ConnectionError", "third_party/", "healthcheck"],
+    "cooldown_hours": 24
+  }
+}

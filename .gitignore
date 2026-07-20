@@ -1,0 +1,11 @@
+# secrets never belong in the repo — patch-bot reads tokens from the environment
+.env
+.env.*
+*.pem
+*.key
+
+# os / editor cruft
+.DS_Store
+.idea/
+.vscode/
+*.log

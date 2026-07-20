@@ -1,0 +1,8 @@
+{
+  "name": "patch-bot",
+  "version": "0.1.0",
+  "description": "Autonomously turn production errors into fix PRs. Polls your error tracker (Sentry), triages new errors, and opens GitHub issues that tag @claude to write a reproducing test + fix + pull request.",
+  "author": "CrackedResearcher",
+  "license": "MIT",
+  "keywords": ["claude-code", "skill", "sentry", "github", "autofix", "bugfix", "agent", "sre"]
+}
