@@ -1,0 +1,14 @@
+{
+  "name": "patch-bot",
+  "owner": {
+    "name": "CrackedResearcher"
+  },
+  "plugins": [
+    {
+      "name": "patch-bot",
+      "source": ".",
+      "description": "A Claude Code skill that fixes your prod bugs and opens the PR. Polls Sentry, files GitHub issues, and lets Claude write a reproducing test + fix + PR.",
+      "version": "0.1.0"
+    }
+  ]
+}
