@@ -29,10 +29,15 @@ You'll need:
 - A Sentry project + auth token (`event:read`, `project:read`)
 - An Anthropic API key
 
-Install:
+Install (Claude Code):
 ```bash
 /plugin marketplace add CrackedResearcher/patch-bot
 /plugin install patch-bot@crackedresearcher
+```
+
+Or with the cross-agent CLI:
+```bash
+npx skills add CrackedResearcher/patch-bot
 ```
 
 Set up, from your repo in Claude Code:
