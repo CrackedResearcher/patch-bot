@@ -31,7 +31,8 @@ You'll need:
 
 Install:
 ```bash
-/plugin install patch-bot
+/plugin marketplace add CrackedResearcher/patch-bot
+/plugin install patch-bot@crackedresearcher
 ```
 
 Set up, from your repo in Claude Code:
