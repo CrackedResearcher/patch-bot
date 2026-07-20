@@ -1,116 +1,94 @@
 # patch-bot
 
-**Turn production errors into fix PRs — automatically.**
+a claude code skill that fixes your prod bugs and opens the PR.
 
-patch-bot is a [Claude Code](https://claude.com/claude-code) skill that watches your error
-tracker, and when a real production bug shows up it opens a GitHub issue and lets Claude
-write a reproducing test, a fix, and a pull request for your team to review.
+## what it is
 
-No server to host. The whole thing is a skill + a schedule.
+patch-bot watches your error tracker. when a real bug shows up in production, it opens a
+github issue, and claude writes a failing test that reproduces it, fixes it, and opens a
+pull request for you to review. you just merge.
 
-```
-Sentry error  ─►  patch-bot triage (scheduled)  ─►  GitHub issue (@claude)
-                                                          │
-                                                          ▼
-                              Claude Code Action  ─►  repro test + fix + PR  ─►  you review & merge
-```
+no server to run. it's just a skill plus a schedule.
 
-## Why it works this way
+## why i built this
 
-- **Poll, don't host.** Instead of running a webhook server 24/7, a scheduled Claude agent
-  polls Sentry every ~15 min. Zero infrastructure; near-real-time is plenty for bug fixes.
-- **GitHub is the database.** Dedupe is done by searching existing issues for a fingerprint
-  marker — no extra storage to run.
-- **Human-gated by default.** patch-bot files the issue automatically but (by default) waits
-  for a human to add the `patch-bot:fix` label before Claude attempts a fix. Full-auto is one
-  config flag away once you trust it.
-- **Repro-first fixes.** The fixer must write a *failing test that reproduces the bug* before
-  changing any code — so you get a regression test with every fix, not a guess.
+at my company i wired this up as an internal tool — sentry would fire a webhook, a little
+backend turned it into a github issue, tagged claude, and claude shipped the fix. it worked
+great, so i wanted to give it to everyone.
 
-## Requirements
+but a hosted backend is a pain for other people to run. so i rebuilt it without the server:
+instead of sentry pushing to something you have to host, a scheduled claude agent just polls
+sentry every few minutes. same result, nothing to deploy, installs in two minutes.
 
-- A GitHub repo where fixes should land.
-- A Sentry project + auth token (`event:read`, `project:read`).
-- An `ANTHROPIC_API_KEY` set as a **repo secret** (the fix action uses it).
-- Claude Code installed locally, and access to scheduled cloud agents for the runtime.
-
-## Install
-
-```bash
-# as a Claude Code plugin
-/plugin install patch-bot
-```
-
-Or clone this repo into your Claude Code skills directory.
-
-## Set up (once per repo)
-
-In Claude Code, from the repo you want to protect:
+## how it works
 
 ```
-run patch-bot setup
+sentry error
+   │
+   │   every ~15 min, patch-bot wakes up and:
+   ▼
+patch-bot triage  ── polls sentry, drops the noise, dedupes ──► opens a github issue (@claude)
+                                                                      │
+                                                                      ▼
+                                              claude code action ──► repro test + fix + PR
+                                                                      │
+                                                                      ▼
+                                                                 you review & merge
 ```
 
-It will:
-1. add `.github/workflows/claude.yml` (the fix action),
-2. create `patch-bot.config.json` and fill it in with you,
-3. create the `patch-bot` and `patch-bot:fix` labels,
-4. help you register the scheduled triage agent,
-5. tell you which secrets to set.
+two halves: patch-bot does the triage (the boring part — noticing, filtering, writing it
+up). claude code's github action does the actual fixing. patch-bot sets both up for you.
 
-Set these secrets where the scheduled agent runs (**not** in the repo):
+a couple of things that keep it sane:
+- **it dedupes.** each issue carries a fingerprint, so the same bug never gets filed twice.
+- **you press go.** by default patch-bot files the issue but waits for you to add a
+  `patch-bot:fix` label before claude touches anything. flip one config flag for full auto.
+- **fix comes with a test.** claude has to reproduce the bug with a failing test before it's
+  allowed to change code — so every fix ships with a regression test, not a guess.
 
-| secret | used for |
-| --- | --- |
-| `SENTRY_AUTH_TOKEN` | reading errors from Sentry |
-| `GH_TOKEN` | opening issues + applying labels |
+## setup
 
-And this one as a **GitHub repo secret** (for the fix action):
+you'll need: a github repo, a sentry project + token, and an `ANTHROPIC_API_KEY`.
 
-| repo secret | used for |
-| --- | --- |
-| `ANTHROPIC_API_KEY` | the Claude Code fix run |
+1. install it
 
-## Everyday use (what it looks like once live)
+   ```
+   /plugin install patch-bot
+   ```
 
-1. A bug hits production. Sentry records it.
-2. Within ~15 min, patch-bot's scheduled pass sees it, checks it clears your policy
-   (occurrence threshold, not on the denylist, right level), and opens a GitHub issue with
-   the stacktrace and repro instructions.
-3. **You** glance at the issue. If it's worth fixing, add the **`patch-bot:fix`** label.
-   (Or set `gate: "auto"` and skip this step entirely.)
-4. The Claude Code Action writes a failing test, fixes the bug, and opens a PR from
-   `fix/patch-bot-<n>` that closes the issue.
-5. You review the PR like any other and merge.
+2. from your repo, in claude code:
 
-You stay in control of *what* gets fixed and *what* gets merged; patch-bot removes the
-tedious middle — noticing, triaging, writing it up, reproducing, and drafting the fix.
+   ```
+   run patch-bot setup
+   ```
 
-## Configuration
+   this scaffolds the fix action, writes `patch-bot.config.json`, makes the labels, and
+   helps you register the scheduled triage agent.
 
-Everything lives in `patch-bot.config.json`. The important knobs:
+3. set your secrets where the schedule runs (not in the repo):
 
-```jsonc
-"policy": {
-  "min_occurrences": 5,       // ignore rare/one-off errors
-  "max_per_run": 5,           // cap issues per pass — one bad deploy can't flood you
-  "gate": "label",            // "label" = human presses go (default) | "auto" = autonomous
-  "levels": ["error", "fatal"],
-  "deny": ["TimeoutError", "ConnectionError", "third_party/", "healthcheck"],
-  "cooldown_hours": 24        // don't refile a just-closed error
-}
-```
+   | secret | for |
+   | --- | --- |
+   | `SENTRY_AUTH_TOKEN` | reading errors |
+   | `GH_TOKEN` | opening issues + labels |
 
-Start with `gate: "label"` and let a pass or two run so you can judge issue quality before
-handing over the keys.
+   and `ANTHROPIC_API_KEY` as a repo secret, for the fix action.
 
-## Adding other error trackers
+that's it. let a pass or two run and watch the issues it files before you hand it the keys.
 
-patch-bot normalizes every source into one shape, so Rollbar / Bugsnag / Datadog / a generic
-webhook are additive: drop in a new adapter next to `skills/patch-bot/references/sentry-adapter.md`
-that emits the same `NormalizedError`, and set `source.provider` accordingly. Nothing
-downstream changes.
+## using it day to day
 
-## License
+a bug hits prod → within ~15 min patch-bot files an issue with the stacktrace → you add
+`patch-bot:fix` if it's worth fixing → claude opens a PR that closes it → you review & merge.
+
+you stay in charge of what gets fixed and what gets merged. patch-bot just handles the
+tedious middle.
+
+## other error trackers
+
+it's built around one normalized shape, so rollbar / bugsnag / datadog are additive — drop
+in an adapter next to the sentry one and point `source.provider` at it. sentry works today.
+
+## license
 
 MIT
